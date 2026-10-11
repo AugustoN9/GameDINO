@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full w-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jogo do Dino - Multicharacter Runner</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background: linear-gradient(135deg, #ff6b00 0%, #e65c00 100%);
+      }
+
+      .pixel-font {
+        font-family: "Press Start 2P", cursive;
+      }
+
+      /* Preserva o visual Pixel Art afiado sem borrões ao redimensionar */
+      canvas {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+
+      /* Animações sutis */
+      .bounce-gentle {
+        animation: bounce 2s infinite;
+      }
+
+      @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
+      }
+
+      /* Estilos para Modo Tela Cheia */
+      body.mode-fullscreen #game-container {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 10;
+        border-radius: 0;
+        padding: 0;
+        background: #e65c00;
+        max-width: 100vw;
+      }
+
+      /* Esconde scrollbars */
+      body::-webkit-scrollbar { display: none; }
+      body { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+  </head>
+  <body
+    id="body-root"
+    class="min-h-full w-full flex flex-col items-center justify-between p-3 md:p-6 text-white select-none transition-all duration-300 relative"
+  >
+    <!-- Cabeçalho -->
+    <header id="main-header" class="text-center mt-1 mb-4 z-20 w-full max-w-4xl flex flex-col items-center">
+      <div class="flex items-center justify-between w-full mb-2">
+        <div class="inline-flex items-center gap-2 bg-black/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-orange-100 border border-white/10">
+          <span>🎮 Canvas Runner</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Botão Mute -->
+          <button
+            onclick="toggleAudio()"
+            id="audio-btn"
+            class="bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/20 text-white p-1.5 px-3 rounded-full text-xs font-bold transition-all shadow-lg flex items-center gap-1.5"
+          >
+            🔊 Som
+          </button>
+
+          <!-- Botão de Alternância de Modos -->
+          <button
+            onclick="toggleLayoutMode()"
+            class="bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/20 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all hover:scale-105 active:scale-95 shadow-lg flex items-center gap-1.5"
+          >
+            <span id="mode-icon">🖥️</span>
+            <span id="mode-text" class="hidden sm:inline">Tela Cheia</span>
+          </button>
+        </div>
+      </div>
+
+      <h1 class="text-2xl md:text-4xl font-extrabold tracking-tight drop-shadow-md pixel-font text-white">
+        JOGO DO DINO
+      </h1>
+      <p id="header-desc" class="text-orange-100/90 mt-1 text-xs md:text-sm font-medium">
+        Escolha o seu herói, salte os obstáculos e conquiste o maior recorde!
+      </p>
+    </header>
+
+    <!-- Container do Jogo (Canvas) -->
+    <main class="w-full max-w-4xl flex-1 flex flex-col items-center justify-center my-auto z-10">
+      <div
+        id="game-container"
+        class="w-full bg-black/20 backdrop-blur-xl border border-white/20 rounded-3xl p-2 md:p-4 shadow-2xl transition-all duration-300 relative flex flex-col items-center justify-center"
+      >
+        <div class="relative w-full aspect-[21/9] bg-orange-950/40 rounded-2xl overflow-hidden border border-white/10 flex items-center justify-center">
+          <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+          <!-- UI de Menu / Game Over -->
+          <div id="game-overlay" class="absolute inset-0 bg-black/70 backdrop-blur-md flex flex-col items-center justify-center p-4 z-30">
+            <h2 id="overlay-title" class="pixel-font text-xl md:text-3xl text-yellow-400 mb-2 text-center drop-shadow">
+              SELEÇÃO DE PERSONAGEM
+            </h2>
+
+            <p id="overlay-subtitle" class="text-xs md:text-sm text-orange-100/90 mb-4 font-medium">
+              Escolha seu avatar e pressione Espaço ou Toque para Iniciar:
+            </p>
+
+            <!-- Seletor de Personagens -->
+            <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-6 max-w-xl">
+              <button onclick="selectAvatar('dino')" id="btn-dino" class="avatar-btn bg-white/20 hover:bg-white/30 border-2 border-yellow-400 p-2 rounded-xl flex flex-col items-center gap-1 transition-all">
+                <span class="text-xl">🦖</span>
+                <span class="text-[10px] font-bold">Dino</span>
+              </button>
+              <button onclick="selectAvatar('goku')" id="btn-goku" class="avatar-btn bg-white/10 hover:bg-white/30 border border-white/20 p-2 rounded-xl flex flex-col items-center gap-1 transition-all">
+                <span class="text-xl">💥</span>
+                <span class="text-[10px] font-bold">Goku</span>
+              </button>
+              <button onclick="selectAvatar('ash')" id="btn-ash" class="avatar-btn bg-white/10 hover:bg-white/30 border border-white/20 p-2 rounded-xl flex flex-col items-center gap-1 transition-all">
+                <span class="text-xl">🧢</span>
+                <span class="text-[10px] font-bold">Ash</span>
+              </button>
+              <button onclick="selectAvatar('sans')" id="btn-sans" class="avatar-btn bg-white/10 hover:bg-white/30 border border-white/20 p-2 rounded-xl flex flex-col items-center gap-1 transition-all">
+                <span class="text-xl">💀</span>
+                <span class="text-[10px] font-bold">Sans</span>
+              </button>
+              <button onclick="selectAvatar('skeleton')" id="btn-skeleton" class="avatar-btn bg-white/10 hover:bg-white/30 border border-white/20 p-2 rounded-xl flex flex-col items-center gap-1 transition-all">
+                <span class="text-xl">☠️</span>
+                <span class="text-[10px] font-bold">Caveira</span>
+              </button>
+              <button onclick="selectAvatar('ninja')" id="btn-ninja" class="avatar-btn bg-white/10 hover:bg-white/30 border border-white/20 p-2 rounded-xl flex flex-col items-center gap-1 transition-all">
+                <span class="text-xl">🥷</span>
+                <span class="text-[10px] font-bold">Ninja</span>
+              </button>
+              <button onclick="selectAvatar('nyan')" id="btn-nyan" class="avatar-btn bg-white/10 hover:bg-white/30 border border-white/20 p-2 rounded-xl flex flex-col items-center gap-1 transition-all">
+                <span class="text-xl">🐱</span>
+                <span class="text-[10px] font-bold">Nyan</span>
+              </button>
+            </div>
+
+            <!-- Placar de pontuação no Game Over -->
+            <div id="score-summary" class="hidden flex items-center gap-4 mb-4 text-sm font-pixel bg-white/10 px-4 py-2 rounded-lg border border-white/20">
+              <span class="text-orange-200">Pontuação: <span id="final-score" class="text-white">0</span></span>
+            </div>
+
+            <button
+              onclick="startGame()"
+              class="bg-yellow-500 hover:bg-yellow-400 text-black font-pixel text-xs sm:text-sm px-6 py-3 rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95"
+            >
+              JOGAR AGORA
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Rodapé -->
+    <footer
+      id="main-footer"
+      class="w-full max-w-4xl mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-orange-100/80 bg-black/15 backdrop-blur-md rounded-2xl p-3 border border-white/10 z-20"
+    >
+      <div class="flex items-center gap-2">
+        <span class="bg-white/20 text-white px-2 py-0.5 rounded border border-white/30 font-mono">ESPAÇO</span>
+        <span>ou</span>
+        <span class="bg-white/20 text-white px-2 py-0.5 rounded border border-white/30 font-mono">▲ CIMA</span>
+        <span>= Pular</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span class="bg-white/20 text-white px-2 py-0.5 rounded border border-white/30 font-mono">▼ BAIXO</span>
+        <span>= Agachar</span>
+      </div>
+
+      <div class="hidden sm:flex items-center gap-1 text-white/90">
+        <span class="inline-block w-2 h-2 rounded-full bg-green-400 bounce-gentle"></span>
+        <span>Clique/Toque na tela para pular</span>
+      </div>
+    </footer>
+
+    <!-- Lógica do Jogo em HTML5 Canvas -->
+    <script>
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // Sistema de som sintético via Web Audio API
+      let audioMuted = false;
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      function playSound(type) {
+        if (audioMuted) return;
+        try {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          if (type === 'jump') {
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+          } else if (type === 'hit') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(60, audioCtx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+          }
+        } catch (e) {}
+      }
+
+      function toggleAudio() {
+        audioMuted = !audioMuted;
+        document.getElementById('audio-btn').innerText = audioMuted ? '🔇 Mudo' : '🔊 Som';
+      }
+
+      // Configuração base do jogo
+      const GAME_WIDTH = 1000;
+      const GAME_HEIGHT = 428; // Proporção ~21:9
+      canvas.width = GAME_WIDTH;
+      canvas.height = GAME_HEIGHT;
+
+      let isPlaying = false;
+      let score = 0;
+      let highScore = localStorage.getItem('dino_highscore') || 0;
+      let selectedAvatar = 'dino';
+      let gameSpeed = 7;
+      let animationFrameId;
+
+      // Estado do Jogador
+      const player = {
+        x: 80,
+        y: 0,
+        width: 44,
+        height: 52,
+        velocityY: 0,
+        gravity: 0.85,
+        jumpForce: -16,
+        groundY: GAME_HEIGHT - 70,
+        isGrounded: true,
+        isDucking: false,
+        legFrame: 0,
+        frameTimer: 0
+      };
+
+      // Obstáculos e Cenário
+      let obstacles = [];
+      let obstacleTimer = 0;
+      let groundOffset = 0;
+
+      // Desenho dos Personagens em Pixel Art
+      function drawPixel(x, y, color, pixelSize = 2) {
+        ctx.fillStyle = color;
+        ctx.fillRect(Math.floor(x), Math.floor(y), pixelSize, pixelSize);
+      }
+
+      function drawAvatar(type, px, py, frame, isDucking) {
+        const pSize = 2;
+        ctx.save();
+        ctx.translate(px, py);
+
+        if (type === 'dino') {
+          // Dino Branco Clássico
+          ctx.fillStyle = '#FFFFFF';
+          // Cabeça
+          ctx.fillRect(12, 0, 24, 16);
+          ctx.fillRect(30, 4, 8, 8);
+          ctx.fillStyle = '#000000'; // Olho
+          ctx.fillRect(18, 4, 4, 4);
+          ctx.fillStyle = '#FFFFFF';
+          // Corpo
+          ctx.fillRect(8, 16, 20, 20);
+          ctx.fillRect(0, 20, 8, 12); // Cauda
+          // Pernas
+          if (frame === 0) {
+            ctx.fillRect(10, 36, 6, 12);
+            ctx.fillRect(20, 36, 6, 6);
+          } else {
+            ctx.fillRect(10, 36, 6, 6);
+            ctx.fillRect(20, 36, 6, 12);
+          }
+        } else if (type === 'goku') {
+          // Goku - DBZ
+          // Cabelo Preto Volumoso
+          ctx.fillStyle = '#111111';
+          ctx.fillRect(4, -8, 28, 16);
+          ctx.fillRect(-2, -4, 10, 12);
+          ctx.fillRect(24, -12, 12, 16);
+          ctx.fillRect(32, -2, 8, 10);
+          // Rosto
+          ctx.fillStyle = '#FAD09E';
+          ctx.fillRect(10, 8, 16, 12);
+          ctx.fillStyle = '#FFFFFF'; // Olhos
+          ctx.fillRect(18, 10, 6, 4);
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(20, 10, 3, 4);
+          // Kimono Laranja + Camisa Azul
+          ctx.fillStyle = '#FF5500';
+          ctx.fillRect(8, 20, 20, 16);
+          ctx.fillStyle = '#0044BB'; // Gola/Cinto
+          ctx.fillRect(12, 20, 12, 6);
+          ctx.fillRect(8, 30, 20, 4);
+          // Calças e Botas
+          ctx.fillStyle = '#FF5500';
+          ctx.fillRect(10, 34, 16, 8);
+          ctx.fillStyle = '#0044BB';
+          if (frame === 0) {
+            ctx.fillRect(8, 42, 8, 8);
+            ctx.fillRect(18, 38, 8, 8);
+          } else {
+            ctx.fillRect(8, 38, 8, 8);
+            ctx.fillRect(18, 42, 8, 8);
+          }
+        } else if (type === 'ash') {
+          // Ash Ketchum & Pikachu
+          // Boné Vermelho/Branco/Verde
+          ctx.fillStyle = '#EE2222';
+          ctx.fillRect(10, 0, 18, 8);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(10, 6, 18, 4);
+          ctx.fillStyle = '#22AA22';
+          ctx.fillRect(18, 2, 4, 4);
+          // Rosto
+          ctx.fillStyle = '#FAD09E';
+          ctx.fillRect(12, 10, 14, 10);
+          // Jaqueta Azul e Camisa
+          ctx.fillStyle = '#0066FF';
+          ctx.fillRect(8, 20, 18, 14);
+          ctx.fillStyle = '#111111';
+          ctx.fillRect(14, 20, 6, 14);
+          // Pikachu no Ombro
+          ctx.fillStyle = '#FFDD00';
+          ctx.fillRect(0, 12, 10, 12); // Corpo
+          ctx.fillRect(-2, 8, 4, 8);  // Orelhas
+          ctx.fillStyle = '#EE2222';
+          ctx.fillRect(2, 16, 3, 3);   // Bochecha
+          // Pernas Ash
+          ctx.fillStyle = '#002288';
+          if (frame === 0) {
+            ctx.fillRect(10, 34, 6, 12);
+            ctx.fillRect(18, 34, 6, 6);
+          } else {
+            ctx.fillRect(10, 34, 6, 6);
+            ctx.fillRect(18, 34, 6, 12);
+          }
+        } else if (type === 'sans') {
+          // Sans - Undertale
+          ctx.fillStyle = '#FFFFFF';
+          // Crânio Largo
+          ctx.fillRect(6, 0, 24, 16);
+          ctx.fillStyle = '#000000'; // Olhos e Sorriso
+          ctx.fillRect(10, 6, 5, 5);
+          ctx.fillRect(21, 6, 5, 5);
+          ctx.fillRect(12, 13, 12, 2);
+          // Jaqueta Azul + Capuz Cinza
+          ctx.fillStyle = '#0066FF';
+          ctx.fillRect(6, 16, 24, 16);
+          ctx.fillStyle = '#888888';
+          ctx.fillRect(10, 16, 16, 4);
+          ctx.fillStyle = '#FFFFFF'; // Camisa interna
+          ctx.fillRect(16, 20, 4, 12);
+          // Bermudas Pretas e Pantufas
+          ctx.fillStyle = '#111111';
+          ctx.fillRect(8, 32, 20, 8);
+          ctx.fillStyle = '#FFFFFF';
+          if (frame === 0) {
+            ctx.fillRect(6, 40, 10, 6);
+            ctx.fillRect(20, 38, 8, 6);
+          } else {
+            ctx.fillRect(6, 38, 8, 6);
+            ctx.fillRect(18, 40, 10, 6);
+          }
+        } else if (type === 'skeleton') {
+          // Caveira Clássica
+          ctx.fillStyle = '#EEEEEE';
+          ctx.fillRect(10, 0, 20, 16); // Crânio
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(14, 6, 5, 5);  // Órbita E
+          ctx.fillRect(22, 6, 5, 5);  // Órbita D
+          ctx.fillStyle = '#FF0000';   // Brilho Neon
+          ctx.fillRect(16, 8, 2, 2);
+          ctx.fillRect(24, 8, 2, 2);
+          // Costelas e Osso
+          ctx.fillStyle = '#DDDDDD';
+          ctx.fillRect(16, 16, 8, 18);
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(14, 20, 12, 2);
+          ctx.fillRect(14, 26, 12, 2);
+          // Pernas
+          ctx.fillStyle = '#FFFFFF';
+          if (frame === 0) {
+            ctx.fillRect(12, 34, 4, 12);
+            ctx.fillRect(22, 34, 4, 6);
+          } else {
+            ctx.fillRect(12, 34, 4, 6);
+            ctx.fillRect(22, 34, 4, 12);
+          }
+        } else if (type === 'ninja') {
+          // Ninja
+          ctx.fillStyle = '#111111';
+          ctx.fillRect(8, 2, 22, 32);
+          ctx.fillStyle = '#FAD09E'; // Faixa dos olhos
+          ctx.fillRect(18, 8, 12, 6);
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(24, 10, 3, 3);
+          ctx.fillStyle = '#CC0000'; // Cachecol Vermelho
+          ctx.fillRect(4, 16, 20, 5);
+          // Pernas
+          ctx.fillStyle = '#222222';
+          if (frame === 0) {
+            ctx.fillRect(10, 34, 6, 12);
+            ctx.fillRect(20, 34, 6, 6);
+          } else {
+            ctx.fillRect(10, 34, 6, 6);
+            ctx.fillRect(20, 34, 6, 12);
+          }
+        } else if (type === 'nyan') {
+          // Nyan Cat
+          ctx.fillStyle = '#FFCC99'; // Biscoito
+          ctx.fillRect(6, 6, 26, 22);
+          ctx.fillStyle = '#FF6699';
+          ctx.fillRect(10, 10, 18, 14);
+          ctx.fillStyle = '#999999'; // Cabeça
+          ctx.fillRect(24, 2, 14, 14);
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(32, 6, 3, 3);
+          // Arco-íris atrás
+          ctx.fillStyle = '#FF0000'; ctx.fillRect(-10, 8, 14, 3);
+          ctx.fillStyle = '#FFFF00'; ctx.fillRect(-10, 11, 14, 3);
+          ctx.fillStyle = '#00FF00'; ctx.fillRect(-10, 14, 14, 3);
+          ctx.fillStyle = '#0099FF'; ctx.fillRect(-10, 17, 14, 3);
+          // Patas
+          ctx.fillStyle = '#999999';
+          if (frame === 0) {
+            ctx.fillRect(8, 28, 6, 6); ctx.fillRect(22, 28, 6, 6);
+          } else {
+            ctx.fillRect(12, 28, 6, 6); ctx.fillRect(26, 28, 6, 6);
+          }
+        }
+
+        ctx.restore();
+      }
+
+      // Seleção de Personagem
+      function selectAvatar(name) {
+        selectedAvatar = name;
+        document.querySelectorAll('.avatar-btn').forEach(btn => {
+          btn.classList.remove('border-yellow-400', 'bg-white/20');
+          btn.classList.add('border-white/20', 'bg-white/10');
+        });
+        const activeBtn = document.getElementById(`btn-${name}`);
+        if (activeBtn) {
+          activeBtn.classList.add('border-yellow-400', 'bg-white/20');
+        }
+      }
+
+      // Reiniciar / Iniciar Jogo
+      function startGame() {
+        document.getElementById('game-overlay').classList.add('hidden');
+        player.y = player.groundY - player.height;
+        player.velocityY = 0;
+        player.isGrounded = true;
+        obstacles = [];
+        score = 0;
+        gameSpeed = 7;
+        isPlaying = true;
+        animate();
+      }
+
+      // Geração de Obstáculos (Cactos de tamanhos variados)
+      function spawnObstacle() {
+        const height = Math.floor(Math.random() * 25) + 35;
+        obstacles.push({
+          x: GAME_WIDTH + 20,
+          y: player.groundY - height,
+          width: 20,
+          height: height
+        });
+      }
+
+      // Loop Principal de Atualização e Renderização
+      function animate() {
+        if (!isPlaying) return;
+
+        ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+        // 1. Linha do Chão Pontilhada Retrô
+        ctx.fillStyle = '#FFFFFF';
+        groundOffset = (groundOffset + gameSpeed) % 30;
+        for (let x = -groundOffset; x < GAME_WIDTH; x += 30) {
+          ctx.fillRect(x, player.groundY, 18, 3);
+        }
+
+        // 2. Física e Atualização do Jogador
+        player.velocityY += player.gravity;
+        player.y += player.velocityY;
+
+        if (player.y >= player.groundY - player.height) {
+          player.y = player.groundY - player.height;
+          player.velocityY = 0;
+          player.isGrounded = true;
+        }
+
+        // Animação das Pernas
+        player.frameTimer++;
+        if (player.frameTimer % 6 === 0) {
+          player.legFrame = player.legFrame === 0 ? 1 : 0;
+        }
+
+        // Desenha o Jogador Escolhido
+        drawAvatar(selectedAvatar, player.x, player.y, player.legFrame, player.isDucking);
+
+        // 3. Atualização dos Obstáculos
+        obstacleTimer++;
+        if (obstacleTimer > Math.max(50, 110 - Math.floor(score / 15))) {
+          spawnObstacle();
+          obstacleTimer = 0;
+        }
+
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          const obs = obstacles[i];
+          obs.x -= gameSpeed;
+
+          // Desenho do Cacto Branco de Alto Contraste
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(obs.x + 7, obs.y, 6, obs.height);
+          ctx.fillRect(obs.x + 2, obs.y + 10, 6, 12);
+          ctx.fillRect(obs.x + 12, obs.y + 16, 6, 12);
+
+          // Detecção de Colisão
+          if (
+            player.x < obs.x + obs.width &&
+            player.x + player.width > obs.x &&
+            player.y < obs.y + obs.height &&
+            player.y + player.height > obs.y
+          ) {
+            gameOver();
+            return;
+          }
+
+          if (obs.x < -30) {
+            obstacles.splice(i, 1);
+            score += 1;
+            if (score % 10 === 0) gameSpeed += 0.3;
+          }
+        }
+
+        // 4. Placar
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '16px "Press Start 2P"';
+        ctx.fillText(`HI ${String(highScore).padStart(5, '0')}  ${String(score).padStart(5, '0')}`, GAME_WIDTH - 320, 40);
+
+        animationFrameId = requestAnimationFrame(animate);
+      }
+
+      function gameOver() {
+        isPlaying = false;
+        playSound('hit');
+        if (score > highScore) {
+          highScore = score;
+          localStorage.setItem('dino_highscore', highScore);
+        }
+
+        document.getElementById('overlay-title').innerText = "FIM DE JOGO!";
+        document.getElementById('overlay-subtitle').innerText = "Você colidiu! Tente novamente com o seu herói:";
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('score-summary').classList.remove('hidden');
+        document.getElementById('game-overlay').classList.remove('hidden');
+      }
+
+      // Eventos de Teclado
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' || e.code === 'ArrowUp') {
+          e.preventDefault();
+          if (isPlaying && player.isGrounded) {
+            player.velocityY = player.jumpForce;
+            player.isGrounded = false;
+            playSound('jump');
+          } else if (!isPlaying && document.getElementById('game-overlay').classList.contains('hidden') === false) {
+            startGame();
+          }
+        }
+      });
+
+      // Suporte a Toque na Tela para Dispositivos Móveis
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (isPlaying && player.isGrounded) {
+          player.velocityY = player.jumpForce;
+          player.isGrounded = false;
+          playSound('jump');
+        }
+      });
+
+      // Alternância do Modo de Visualização (Moldura / Tela Cheia)
+      let isFullscreenMode = false;
+      function toggleLayoutMode() {
+        isFullscreenMode = !isFullscreenMode;
+        const body = document.getElementById('body-root');
+        const headerDesc = document.getElementById('header-desc');
+        const modeText = document.getElementById('mode-text');
+        const modeIcon = document.getElementById('mode-icon');
+
+        if (isFullscreenMode) {
+          body.classList.add('mode-fullscreen');
+          headerDesc.classList.add('hidden');
+          modeText.innerText = "Modo Box";
+          modeIcon.innerText = "🔲";
+        } else {
+          body.classList.remove('mode-fullscreen');
+          headerDesc.classList.remove('hidden');
+          modeText.innerText = "Tela Cheia";
+          modeIcon.innerText = "🖥️";
+        }
+      }
+
+      // Desenho Inicial Estático do Canvas
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '14px "Press Start 2P"';
+      ctx.fillText("Pressione JOGAR AGORA para começar", 250, 220);
+    </script>
+  </body>
+</html>

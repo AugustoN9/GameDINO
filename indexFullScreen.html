@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full w-full overflow-hidden">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JOGO DINO - TELA CHEIA</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <style type="text/css">
+      .font-pixel {
+        font-family: 'Press Start 2P', monospace;
+      }
+      .font-sans-custom {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+
+      /* Contentor que força a expansão do jogo */
+      .game-wrapper {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      /* Escala e filtros para o iframe ocupar o ecrã com linhas brancas e fundo transparente */
+      .dino-iframe {
+        width: 100vw !important;
+        height: 100vh !important;
+        /* Aumenta a escala do jogo para ocupar todo o ecrã */
+        transform: scale(1.8);
+        transform-origin: center center;
+        /* Inverte o jogo para branco e faz o fundo fundir-se com o laranja */
+        filter: invert(1) contrast(2) brightness(1.5);
+        mix-blend-mode: screen;
+      }
+
+      @media (max-width: 768px) {
+        .dino-iframe {
+          transform: scale(1.2);
+        }
+      }
+
+      /* Esconde a barra de rolagem */
+      body {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      body::-webkit-scrollbar {
+        display: none;
+      }
+    </style>
+  </head>
+  <body
+    class="h-full w-full bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 text-white font-sans-custom overflow-hidden relative flex flex-col justify-between"
+  >
+    <!-- Topbar / Título Flutuante -->
+    <header
+      class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 md:p-6 bg-gradient-to-b from-black/40 via-black/10 to-transparent pointer-events-none"
+    >
+      <div
+        class="flex items-center gap-3 bg-black/30 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full shadow-lg pointer-events-auto"
+      >
+        <span class="text-xl md:text-2xl animate-bounce">🦖</span>
+        <h1 class="font-pixel text-xs sm:text-sm md:text-base text-white tracking-widest uppercase">
+          JOGO DO DINO
+        </h1>
+      </div>
+
+      <button
+        onclick="toggleFullscreen()"
+        class="pointer-events-auto bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/20 text-white p-2.5 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 text-xs font-semibold shadow-lg"
+        title="Alternar Tela Cheia"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+          />
+        </svg>
+        <span class="hidden sm:inline">Modo Fullscreen</span>
+      </button>
+    </header>
+
+    <!-- ÁREA DO JOGO (COM ESCALA AMPLIADA) -->
+    <main class="game-wrapper">
+      <iframe
+        id="dino-game"
+        src="https://chromedino.com/embed/"
+        frameborder="0"
+        scrolling="no"
+        loading="lazy"
+        title="Jogo do Dino Chrome"
+        class="dino-iframe"
+      ></iframe>
+    </main>
+
+    <!-- Footer Flutuante de Controles -->
+    <footer
+      class="absolute bottom-0 left-0 right-0 z-20 flex justify-center p-4 bg-gradient-to-t from-black/50 via-black/20 to-transparent pointer-events-none"
+    >
+      <div
+        class="bg-black/40 backdrop-blur-md border border-white/20 px-6 py-2.5 rounded-full flex items-center gap-4 text-xs md:text-sm font-medium shadow-xl pointer-events-auto text-white/90"
+      >
+        <div class="flex items-center gap-2">
+          <span
+            class="bg-white/20 text-white px-2 py-0.5 rounded border border-white/30 font-mono text-[11px]"
+            >ESPAÇO</span
+          >
+          <span>ou</span>
+          <span
+            class="bg-white/20 text-white px-2 py-0.5 rounded border border-white/30 font-mono text-[11px]"
+            >▲ SETA CIMA</span
+          >
+          <span class="hidden sm:inline">para Pular</span>
+        </div>
+        <span class="text-white/40">|</span>
+        <div class="flex items-center gap-2">
+          <span
+            class="bg-white/20 text-white px-2 py-0.5 rounded border border-white/30 font-mono text-[11px]"
+            >▼ SETA BAIXO</span
+          >
+          <span class="hidden sm:inline">para Abaixar</span>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Script para alternar o modo tela cheia do navegador -->
+    <script>
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch((err) => {
+            console.log(`Erro ao ativar tela cheia: ${err.message}`);
+          });
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          }
+        }
+      }
+    </script>
+  </body>
+</html>

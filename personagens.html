@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full w-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Jogo do Dino Customizado - Runner Arcade HD</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background: linear-gradient(135deg, #ff6b00 0%, #e65c00 100%);
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+      }
+
+      .pixel-font {
+        font-family: "Press Start 2P", cursive;
+      }
+
+      /* Rendering sem desfoque para Pixel Art HD */
+      canvas {
+        image-rendering: -moz-crisp-edges;
+        image-rendering: -webkit-crisp-edges;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+
+      /* Regras do Modo Tela Cheia */
+      body.mode-fullscreen {
+        padding: 0 !important;
+        overflow: hidden;
+        background: #e65c00;
+      }
+
+      body.mode-fullscreen #main-header {
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        right: 1rem;
+        width: auto;
+        max-width: none;
+        z-index: 30;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(8px);
+        padding: 0.75rem 1.25rem;
+        border-radius: 9999px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      body.mode-fullscreen .main-card {
+        max-width: 100vw !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        border-radius: 0 !important;
+        border: none !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      body.mode-fullscreen .canvas-container {
+        border-radius: 0 !important;
+        border: none !important;
+        width: 100vw !important;
+        height: 100vh !important;
+      }
+
+      body.mode-fullscreen #main-footer {
+        position: fixed;
+        bottom: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 30;
+        width: auto;
+        max-width: 90vw;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(8px);
+        border-radius: 1rem;
+      }
+
+      /* Ocultar barras de rolagem */
+      ::-webkit-scrollbar {
+        display: none;
+      }
+      * {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  </head>
+  <body
+    id="body-root"
+    class="min-h-full w-full flex flex-col items-center justify-between p-3 md:p-6 text-white transition-all duration-300"
+  >
+    <header
+      id="main-header"
+      class="w-full max-w-4xl flex items-center justify-between gap-4 mb-3 z-20 transition-all duration-300"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="inline-flex items-center gap-2 bg-black/25 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider text-orange-100 border border-white/10 shadow-sm"
+        >
+          <span class="animate-pulse">🦖</span>
+          <span class="hidden sm:inline">Runner Arcade HD</span>
+        </div>
+        <h1
+          class="text-base md:text-2xl font-extrabold tracking-tight pixel-font text-white drop-shadow-md"
+        >
+          DINO RUNNER
+        </h1>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Botão Áudio -->
+        <button
+          id="btn-sound"
+          onclick="game.toggleSound()"
+          class="bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/20 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-md"
+        >
+          <span id="sound-icon">🔊</span>
+          <span class="hidden sm:inline" id="sound-label">Som ON</span>
+        </button>
+
+        <!-- Botão Modo de Exibição -->
+        <button
+          onclick="game.toggleViewMode()"
+          class="bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-md"
+        >
+          <span id="mode-icon">🖥️</span>
+          <span class="hidden sm:inline" id="mode-text">Tela Cheia</span>
+        </button>
+      </div>
+    </header>
+
+    <main
+      class="w-full max-w-4xl flex-1 flex flex-col items-center justify-center my-auto z-10"
+    >
+      <div
+        id="main-card"
+        class="main-card w-full bg-black/20 backdrop-blur-xl border border-white/20 rounded-3xl p-2.5 sm:p-5 shadow-2xl transition-all duration-300 relative"
+      >
+        <!-- Moldura do Canvas -->
+        <div
+          id="canvas-container"
+          class="canvas-container relative w-full aspect-[21/9] bg-gradient-to-b from-orange-950/70 to-orange-900/50 rounded-2xl overflow-hidden border border-white/10 flex items-center justify-center shadow-inner"
+        >
+          <!-- Canvas HTML5 Dinâmico -->
+          <canvas
+            id="gameCanvas"
+            class="w-full h-full block cursor-pointer"
+          ></canvas>
+
+          <!-- Overlay Menu de Início / Game Over -->
+          <div
+            id="ui-overlay"
+            class="absolute inset-0 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center z-20 transition-opacity duration-200"
+          >
+            <div
+              id="overlay-content"
+              class="max-w-md w-full bg-black/50 border border-white/20 rounded-2xl p-5 shadow-2xl flex flex-col items-center gap-4"
+            >
+              <div
+                id="overlay-title"
+                class="pixel-font text-lg sm:text-2xl text-yellow-300 tracking-wider drop-shadow-md"
+              >
+                PRONTO PARA CORRER?
+              </div>
+
+              <!-- Seletor de Personagem -->
+              <div class="w-full">
+                <span
+                  class="text-xs font-bold uppercase tracking-widest text-orange-200/80 mb-2 block"
+                >
+                  Escolha seu Personagem:
+                </span>
+                <div class="grid grid-cols-4 gap-2" id="avatar-selector">
+                  <!-- Injetado Dinamicamente via JS -->
+                </div>
+              </div>
+
+              <div
+                id="overlay-score"
+                class="hidden text-sm font-bold text-orange-100/90"
+              >
+                Pontuação:
+                <span id="final-score" class="pixel-font text-white">0</span>
+              </div>
+
+              <!-- Botão Iniciar -->
+              <button
+                id="btn-start"
+                onclick="game.startOrRestart()"
+                class="w-full py-3 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-black font-extrabold rounded-xl shadow-lg transform transition active:scale-95 pixel-font text-xs tracking-wider flex items-center justify-center gap-2"
+              >
+                <span>▶ INICIAR JOGO</span>
+              </button>
+
+              <p class="text-[11px] text-orange-200/70">
+                Pressione
+                <kbd class="bg-white/20 px-1.5 py-0.5 rounded text-white"
+                  >ESPAÇO</kbd
+                >
+                ou toque para Pular
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer
+      id="main-footer"
+      class="w-full max-w-4xl mt-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-orange-100/80 bg-black/15 backdrop-blur-md rounded-2xl p-3 border border-white/10 z-20 transition-all duration-300"
+    >
+      <div class="flex items-center gap-2.5">
+        <span
+          class="bg-white/20 text-white px-2 py-1 rounded-lg border border-white/30 font-mono"
+          >ESPAÇO / ▲</span
+        >
+        <span>Pular</span>
+        <span class="text-white/30">|</span>
+        <span
+          class="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 font-mono"
+          >▼</span
+        >
+        <span>Agachar</span>
+      </div>
+
+      <!-- Botões Virtuais para Mobile -->
+      <div class="flex items-center gap-3 w-full sm:w-auto">
+        <button
+          ontouchstart="game.handleTouchDown(event, 'jump')"
+          onmousedown="game.handleMouseDown(event, 'jump')"
+          class="flex-1 sm:flex-none px-4 py-2 bg-white/20 active:bg-white/40 border border-white/30 rounded-xl font-bold text-white text-center shadow-md select-none"
+        >
+          🦘 PULAR
+        </button>
+        <button
+          ontouchstart="game.handleTouchDown(event, 'duck')"
+          ontouchend="game.handleTouchUp(event, 'duck')"
+          onmousedown="game.handleMouseDown(event, 'duck')"
+          onmouseup="game.handleMouseUp(event, 'duck')"
+          class="flex-1 sm:flex-none px-4 py-2 bg-white/20 active:bg-white/40 border border-white/30 rounded-xl font-bold text-white text-center shadow-md select-none"
+        >
+          🛡️ AGACHAR
+        </button>
+      </div>
+    </footer>
+
+    <script>
+      class SoundController {
+        constructor() {
+          this.ctx = null;
+          this.muted = false;
+        }
+
+        init() {
+          if (!this.ctx) {
+            const AudioContext =
+              window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+              this.ctx = new AudioContext();
+            }
+          }
+        }
+
+        playJump() {
+          if (this.muted || !this.ctx) return;
+          try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "square";
+            osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(
+              600,
+              this.ctx.currentTime + 0.12,
+            );
+
+            gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(
+              0.01,
+              this.ctx.currentTime + 0.12,
+            );
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.12);
+          } catch (e) {}
+        }
+
+        playScore() {
+          if (this.muted || !this.ctx) return;
+          try {
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.setValueAtTime(659.25, now + 0.08);
+
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(now + 0.2);
+          } catch (e) {}
+        }
+
+        playGameOver() {
+          if (this.muted || !this.ctx) return;
+          try {
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(80, now + 0.35);
+
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(now + 0.35);
+          } catch (e) {}
+        }
+      }
+
+      const AVATARS = [
+        {
+          id: "dino",
+          name: "T-Rex",
+          icon: "🦖",
+          width: 44,
+          height: 48,
+          duckHeight: 26,
+          draw: (ctx, x, y, w, h, isDucking, frame) => {
+            ctx.fillStyle = "#FFFFFF";
+            if (isDucking) {
+              ctx.fillRect(x + 10, y + 10, 30, 14);
+              ctx.fillRect(x + 30, y + 4, 14, 12);
+              ctx.fillStyle = "#000000";
+              ctx.fillRect(x + 38, y + 6, 3, 3);
+              ctx.fillStyle = "#FFFFFF";
+              const legOffset = frame % 2 === 0 ? 0 : 4;
+              ctx.fillRect(x + 14 + legOffset, y + 24, 4, 4);
+              ctx.fillRect(x + 26 - legOffset, y + 24, 4, 4);
+              return;
+            }
+            ctx.fillRect(x + 20, y + 0, 22, 16);
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(x + 26, y + 4, 4, 4);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(x + 10, y + 16, 24, 18);
+            ctx.fillRect(x + 0, y + 20, 10, 10);
+            ctx.fillRect(x + 28, y + 22, 6, 4);
+            const step = frame % 2 === 0;
+            ctx.fillRect(x + (step ? 12 : 20), y + 34, 6, 12);
+            ctx.fillRect(x + (step ? 22 : 14), y + 34, 6, 12);
+          },
+        },
+        {
+          id: "ninja",
+          name: "Ninja",
+          icon: "🥷",
+          width: 40,
+          height: 48,
+          duckHeight: 26,
+          draw: (ctx, x, y, w, h, isDucking, frame) => {
+            ctx.fillStyle = "#FFFFFF";
+            if (isDucking) {
+              ctx.fillRect(x + 6, y + 10, 28, 14);
+              ctx.fillStyle = "#FFD700";
+              ctx.fillRect(x + 22, y + 12, 8, 4);
+              ctx.fillStyle = "#FFFFFF";
+              const legOffset = frame % 2 === 0 ? 0 : 4;
+              ctx.fillRect(x + 10 + legOffset, y + 24, 5, 4);
+              ctx.fillRect(x + 22 - legOffset, y + 24, 5, 4);
+              return;
+            }
+            ctx.fillRect(x + 10, y + 2, 20, 18);
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(x + 12, y + 8, 16, 4);
+            ctx.fillStyle = "#FFD700";
+            ctx.fillRect(x + 18, y + 8, 4, 4);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(x + 8, y + 20, 24, 16);
+            ctx.fillRect(x + 2, y + 12, 6, 18);
+            const step = frame % 2 === 0;
+            ctx.fillRect(x + (step ? 10 : 20), y + 36, 6, 12);
+            ctx.fillRect(x + (step ? 20 : 10), y + 36, 6, 12);
+          },
+        },
+        {
+          id: "astro",
+          name: "Astro",
+          icon: "🚀",
+          width: 44,
+          height: 48,
+          duckHeight: 26,
+          draw: (ctx, x, y, w, h, isDucking, frame) => {
+            ctx.fillStyle = "#FFFFFF";
+            if (isDucking) {
+              ctx.fillRect(x + 8, y + 8, 28, 16);
+              ctx.fillStyle = "#00E5FF";
+              ctx.fillRect(x + 24, y + 10, 10, 6);
+              ctx.fillStyle = "#FFFFFF";
+              return;
+            }
+            ctx.fillRect(x + 10, y + 0, 22, 20);
+            ctx.fillStyle = "#00E5FF";
+            ctx.fillRect(x + 18, y + 4, 12, 10);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(x + 8, y + 20, 26, 16);
+            ctx.fillRect(x + 0, y + 16, 8, 18);
+            const step = frame % 2 === 0;
+            ctx.fillRect(x + (step ? 10 : 22), y + 36, 8, 12);
+            ctx.fillRect(x + (step ? 22 : 10), y + 36, 8, 12);
+          },
+        },
+        {
+          id: "nyan",
+          name: "Nyan",
+          icon: "🐱",
+          width: 48,
+          height: 44,
+          duckHeight: 24,
+          draw: (ctx, x, y, w, h, isDucking, frame) => {
+            ctx.fillStyle = "#FFFFFF";
+            if (isDucking) {
+              ctx.fillRect(x + 6, y + 10, 36, 12);
+              ctx.fillRect(x + 30, y + 4, 12, 10);
+              return;
+            }
+            ctx.fillRect(x + 8, y + 10, 28, 22);
+            ctx.fillRect(x + 28, y + 0, 6, 8);
+            ctx.fillRect(x + 38, y + 0, 6, 8);
+            ctx.fillRect(x + 26, y + 6, 20, 20);
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(x + 38, y + 10, 4, 4);
+            ctx.fillStyle = "#FFFFFF";
+            const tailY = frame % 2 === 0 ? 14 : 18;
+            ctx.fillRect(x + 0, y + tailY, 8, 6);
+            const step = frame % 2 === 0;
+            ctx.fillRect(x + (step ? 10 : 18), y + 32, 6, 10);
+            ctx.fillRect(x + (step ? 26 : 34), y + 32, 6, 10);
+          },
+        },
+      ];
+
+      class DinoGame {
+        constructor() {
+          this.canvas = document.getElementById("gameCanvas");
+          this.ctx = this.canvas.getContext("2d");
+          this.sound = new SoundController();
+
+          this.selectedAvatarIndex = 0;
+          this.viewMode = "card";
+
+          this.gameState = "START";
+          this.score = 0;
+          this.highScore = parseInt(
+            localStorage.getItem("dino_highscore") || "0",
+            10,
+          );
+          this.speed = 6;
+          this.baseSpeed = 6;
+          this.frameCount = 0;
+
+          // Dimensões Virtuais Fixas para manter Proporção Perfeita sem achatar
+          this.virtualWidth = 800;
+          this.virtualHeight = 350;
+          this.scale = 1;
+          this.offsetX = 0;
+          this.offsetY = 0;
+
+          // Player Physics
+          this.player = {
+            x: 60,
+            y: 0,
+            vy: 0,
+            gravity: 0.65,
+            jumpForce: -12.5,
+            isGrounded: true,
+            isDucking: false,
+          };
+
+          this.obstacles = [];
+          this.groundY = this.virtualHeight - 40;
+
+          this.initResize();
+          this.bindEvents();
+          this.renderAvatarSelector();
+          this.gameLoop = this.gameLoop.bind(this);
+          requestAnimationFrame(this.gameLoop);
+        }
+
+        /* Resolução HD com DPI Scaling e Aspect Ratio preservado */
+        initResize() {
+          const resize = () => {
+            const container = this.canvas.parentElement;
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            const dpr = window.devicePixelRatio || 1;
+
+            // Ajustar Canvas Físico com High DPI
+            this.canvas.width = containerWidth * dpr;
+            this.canvas.height = containerHeight * dpr;
+
+            // Cálculo do Scale mantendo Proporção do Jogo sem Distorcer
+            const scaleX = containerWidth / this.virtualWidth;
+            const scaleY = containerHeight / this.virtualHeight;
+            this.scale = Math.min(scaleX, scaleY);
+
+            // Centralização com Letterboxing transparente
+            this.offsetX =
+              (containerWidth - this.virtualWidth * this.scale) / 2;
+            this.offsetY =
+              (containerHeight - this.virtualHeight * this.scale) / 2;
+
+            // Desativar Suavização de Imagem para Pixel Art Nitida em qualquer tamanho
+            this.ctx.imageSmoothingEnabled = false;
+            this.ctx.mozImageSmoothingEnabled = false;
+            this.ctx.webkitImageSmoothingEnabled = false;
+            this.ctx.msImageSmoothingEnabled = false;
+          };
+
+          window.addEventListener("resize", resize);
+          resize();
+        }
+
+        renderAvatarSelector() {
+          const container = document.getElementById("avatar-selector");
+          container.innerHTML = "";
+          AVATARS.forEach((avatar, index) => {
+            const isSelected = index === this.selectedAvatarIndex;
+            const btn = document.createElement("button");
+            btn.className = `p-2 rounded-xl border flex flex-col items-center justify-center transition-all ${
+              isSelected
+                ? "bg-yellow-400/30 border-yellow-300 text-white scale-105 shadow-md"
+                : "bg-white/10 border-white/20 text-white/70 hover:bg-white/20"
+            }`;
+            btn.onclick = () => {
+              this.selectedAvatarIndex = index;
+              this.renderAvatarSelector();
+            };
+            btn.innerHTML = `
+            <span class="text-xl sm:text-2xl">${avatar.icon}</span>
+            <span class="text-[10px] font-bold mt-1">${avatar.name}</span>
+          `;
+            container.appendChild(btn);
+          });
+        }
+
+        bindEvents() {
+          window.addEventListener("keydown", (e) => {
+            if (e.code === "Space" || e.code === "ArrowUp") {
+              e.preventDefault();
+              this.sound.init();
+              if (this.gameState === "RUNNING") this.jump();
+              else if (this.gameState !== "RUNNING") this.startOrRestart();
+            } else if (e.code === "ArrowDown") {
+              e.preventDefault();
+              if (this.gameState === "RUNNING") this.duck(true);
+            }
+          });
+
+          window.addEventListener("keyup", (e) => {
+            if (e.code === "ArrowDown") {
+              this.duck(false);
+            }
+          });
+
+          this.canvas.addEventListener("mousedown", (e) => {
+            this.sound.init();
+            if (this.gameState === "RUNNING") this.jump();
+          });
+        }
+
+        handleTouchDown(e, action) {
+          if (e) e.preventDefault();
+          this.sound.init();
+          if (this.gameState !== "RUNNING") {
+            this.startOrRestart();
+            return;
+          }
+          if (action === "jump") this.jump();
+          if (action === "duck") this.duck(true);
+        }
+
+        handleTouchUp(e, action) {
+          if (e) e.preventDefault();
+          if (action === "duck") this.duck(false);
+        }
+
+        handleMouseDown(e, action) {
+          if (action === "jump") this.jump();
+          if (action === "duck") this.duck(true);
+        }
+
+        handleMouseUp(e, action) {
+          if (action === "duck") this.duck(false);
+        }
+
+        jump() {
+          if (this.player.isGrounded) {
+            this.player.vy = this.player.jumpForce;
+            this.player.isGrounded = false;
+            this.sound.playJump();
+          }
+        }
+
+        duck(isDucking) {
+          this.player.isDucking = isDucking;
+        }
+
+        startOrRestart() {
+          this.sound.init();
+          this.score = 0;
+          this.speed = this.baseSpeed;
+          this.obstacles = [];
+          this.player.y = this.groundY;
+          this.player.vy = 0;
+          this.player.isGrounded = true;
+          this.player.isDucking = false;
+          this.gameState = "RUNNING";
+
+          document
+            .getElementById("ui-overlay")
+            .classList.add("opacity-0", "pointer-events-none");
+        }
+
+        gameOver() {
+          this.gameState = "GAMEOVER";
+          this.sound.playGameOver();
+
+          if (this.score > this.highScore) {
+            this.highScore = Math.floor(this.score);
+            localStorage.setItem("dino_highscore", this.highScore);
+          }
+
+          document.getElementById("overlay-title").innerText = "FIM DE JOGO!";
+          document.getElementById("final-score").innerText = Math.floor(
+            this.score,
+          );
+          document.getElementById("overlay-score").classList.remove("hidden");
+          document.getElementById("btn-start").innerHTML =
+            "<span>🔄 JOGAR NOVAMENTE</span>";
+          document
+            .getElementById("ui-overlay")
+            .classList.remove("opacity-0", "pointer-events-none");
+        }
+
+        toggleSound() {
+          this.sound.muted = !this.sound.muted;
+          document.getElementById("sound-icon").innerText = this.sound.muted
+            ? "🔇"
+            : "🔊";
+          document.getElementById("sound-label").innerText = this.sound.muted
+            ? "Som OFF"
+            : "Som ON";
+        }
+
+        toggleViewMode() {
+          const body = document.getElementById("body-root");
+          const modeText = document.getElementById("mode-text");
+          const modeIcon = document.getElementById("mode-icon");
+
+          if (this.viewMode === "card") {
+            this.viewMode = "fullscreen";
+            body.classList.add("mode-fullscreen");
+            modeText.innerText = "Modo Card";
+            modeIcon.innerText = "🔲";
+          } else {
+            this.viewMode = "card";
+            body.classList.remove("mode-fullscreen");
+            modeText.innerText = "Tela Cheia";
+            modeIcon.innerText = "🖥️";
+          }
+          setTimeout(() => window.dispatchEvent(new Event("resize")), 50);
+        }
+
+        spawnObstacle() {
+          const minGap = 260;
+          const lastObstacle = this.obstacles[this.obstacles.length - 1];
+
+          if (
+            !lastObstacle ||
+            this.virtualWidth - lastObstacle.x > minGap + Math.random() * 180
+          ) {
+            const type = Math.random();
+            if (type < 0.65) {
+              this.obstacles.push({
+                type: "cactus",
+                x: this.virtualWidth,
+                width: 22 + Math.random() * 14,
+                height: 38 + Math.random() * 14,
+                y: this.groundY,
+              });
+            } else {
+              const heights = [
+                this.groundY - 20,
+                this.groundY - 50,
+                this.groundY - 78,
+              ];
+              const birdY = heights[Math.floor(Math.random() * heights.length)];
+              this.obstacles.push({
+                type: "bird",
+                x: this.virtualWidth,
+                width: 36,
+                height: 24,
+                y: birdY,
+              });
+            }
+          }
+        }
+
+        update() {
+          if (this.gameState !== "RUNNING") return;
+
+          this.frameCount++;
+          this.score += 0.15;
+          this.speed = this.baseSpeed + Math.floor(this.score / 100) * 0.5;
+
+          if (
+            Math.floor(this.score) > 0 &&
+            Math.floor(this.score) % 100 === 0 &&
+            this.frameCount % 6 === 0
+          ) {
+            this.sound.playScore();
+          }
+
+          // Física
+          this.player.vy += this.player.gravity;
+          this.player.y += this.player.vy;
+
+          const currentAvatar = AVATARS[this.selectedAvatarIndex];
+          const currentHeight = this.player.isDucking
+            ? currentAvatar.duckHeight
+            : currentAvatar.height;
+
+          if (this.player.y + currentHeight >= this.groundY) {
+            this.player.y = this.groundY - currentHeight;
+            this.player.vy = 0;
+            this.player.isGrounded = true;
+          }
+
+          // Obstáculos
+          this.spawnObstacle();
+
+          for (let i = this.obstacles.length - 1; i >= 0; i--) {
+            const obs = this.obstacles[i];
+            obs.x -= this.speed;
+
+            const pBox = {
+              x: this.player.x + 4,
+              y: this.player.y + 4,
+              w: currentAvatar.width - 8,
+              h: currentHeight - 6,
+            };
+
+            const oBox = {
+              x: obs.x + 2,
+              y: obs.type === "cactus" ? obs.y - obs.height : obs.y,
+              w: obs.width - 4,
+              h: obs.height - 4,
+            };
+
+            if (
+              pBox.x < oBox.x + oBox.w &&
+              pBox.x + pBox.w > oBox.x &&
+              pBox.y < oBox.y + oBox.h &&
+              pBox.y + pBox.h > oBox.y
+            ) {
+              this.gameOver();
+            }
+
+            if (obs.x + obs.width < 0) {
+              this.obstacles.splice(i, 1);
+            }
+          }
+        }
+
+        draw() {
+          const dpr = window.devicePixelRatio || 1;
+
+          // Reset & Limpar Tela
+          this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+          // Aplicar Transformação de Escala e Matriz de Centralização
+          this.ctx.setTransform(
+            this.scale * dpr,
+            0,
+            0,
+            this.scale * dpr,
+            this.offsetX * dpr,
+            this.offsetY * dpr,
+          );
+
+          // Garantir renderização Pixel Art limpa
+          this.ctx.imageSmoothingEnabled = false;
+
+          // Chão Retro Pixelado
+          this.ctx.strokeStyle = "#FFFFFF";
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, this.groundY);
+          this.ctx.lineTo(this.virtualWidth, this.groundY);
+          this.ctx.stroke();
+
+          // Linhas de Movimento no Chão
+          this.ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+          for (let i = 0; i < this.virtualWidth; i += 40) {
+            const dotX =
+              (i - ((this.frameCount * this.speed) % 40) + this.virtualWidth) %
+              this.virtualWidth;
+            this.ctx.fillRect(dotX, this.groundY + 8, 8, 2);
+            this.ctx.fillRect(
+              (dotX + 20) % this.virtualWidth,
+              this.groundY + 16,
+              4,
+              2,
+            );
+          }
+
+          // Desenhar Obstáculos
+          this.ctx.fillStyle = "#FFFFFF";
+          this.obstacles.forEach((obs) => {
+            if (obs.type === "cactus") {
+              const cx = obs.x;
+              const cy = obs.y - obs.height;
+              this.ctx.fillRect(
+                cx + obs.width * 0.35,
+                cy,
+                obs.width * 0.3,
+                obs.height,
+              );
+              this.ctx.fillRect(
+                cx,
+                cy + obs.height * 0.3,
+                obs.width * 0.35,
+                obs.height * 0.15,
+              );
+              this.ctx.fillRect(
+                cx,
+                cy + obs.height * 0.15,
+                obs.width * 0.15,
+                obs.height * 0.2,
+              );
+              this.ctx.fillRect(
+                cx + obs.width * 0.65,
+                cy + obs.height * 0.4,
+                obs.width * 0.35,
+                obs.height * 0.15,
+              );
+              this.ctx.fillRect(
+                cx + obs.width * 0.85,
+                cy + obs.height * 0.25,
+                obs.width * 0.15,
+                obs.height * 0.2,
+              );
+            } else {
+              const bx = obs.x;
+              const by = obs.y;
+              const wingUp = Math.floor(this.frameCount / 10) % 2 === 0;
+              this.ctx.fillRect(bx + 6, by + 8, 20, 8);
+              this.ctx.fillRect(bx + 22, by + 4, 8, 6);
+              if (wingUp) {
+                this.ctx.fillRect(bx + 10, by - 6, 8, 14);
+              } else {
+                this.ctx.fillRect(bx + 10, by + 12, 8, 12);
+              }
+            }
+          });
+
+          // Desenhar Personagem
+          const avatar = AVATARS[this.selectedAvatarIndex];
+          const currentHeight = this.player.isDucking
+            ? avatar.duckHeight
+            : avatar.height;
+          avatar.draw(
+            this.ctx,
+            this.player.x,
+            this.player.y,
+            avatar.width,
+            currentHeight,
+            this.player.isDucking,
+            Math.floor(this.frameCount / 6),
+          );
+
+          // Placar / HUD
+          this.ctx.fillStyle = "#FFFFFF";
+          this.ctx.font = '12px "Press Start 2P", monospace';
+          this.ctx.textAlign = "right";
+          const currentScoreStr = Math.floor(this.score)
+            .toString()
+            .padStart(5, "0");
+          const highScoreStr = this.highScore.toString().padStart(5, "0");
+          this.ctx.fillText(
+            `HI ${highScoreStr}  ${currentScoreStr}`,
+            this.virtualWidth - 20,
+            30,
+          );
+        }
+
+        gameLoop() {
+          this.update();
+          this.draw();
+          requestAnimationFrame(this.gameLoop);
+        }
+      }
+
+      let game;
+      window.addEventListener("load", () => {
+        game = new DinoGame();
+      });
+    </script>
+  </body>
+</html>

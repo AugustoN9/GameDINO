@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full w-full">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jogo do Dino</title>
-    <!-- Tailwind CSS para utilitários de estilo rápidos e limpos -->
+    <title>Jogo do Dino - Duplo Modo</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts para tipografia no estilo Pixel / Retro Moderno -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -18,19 +18,13 @@
       body {
         font-family: "Plus Jakarta Sans", sans-serif;
         background: linear-gradient(135deg, #ff6b00 0%, #e65c00 100%);
-        min-height: 100vh;
       }
 
       .pixel-font {
         font-family: "Press Start 2P", cursive;
       }
 
-      /* 
-      Filtro mágico CSS no iframe:
-      - invert(1): inverte as cores (preto vira branco, fundo claro vira escuro/transparente)
-      - contrast(1.8) e brightness(1.2): aumenta o destaque para as linhas brancas ficarem super nitidas
-      - mix-blend-mode: color-burn / multiply para integrar suavemente
-    */
+      /* Filtro e estilo base do iframe */
       .dino-iframe {
         filter: invert(1) contrast(1.6) brightness(1.2)
           drop-shadow(0px 4px 10px rgba(0, 0, 0, 0.3));
@@ -40,52 +34,86 @@
         height: 100%;
       }
 
-      /* Animações sutis */
-      .bounce-gentle {
-        animation: bounce 2s infinite;
+      /* Estilos específicos do Modo Tela Cheia */
+      body.mode-fullscreen .game-wrapper {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #ff6b00 0%, #e65c00 100%);
       }
 
-      @keyframes bounce {
-        0%,
-        100% {
-          transform: translateY(0);
+      body.mode-fullscreen .dino-iframe {
+        width: 100vw !important;
+        height: 100vh !important;
+        transform: scale(1.8);
+        transform-origin: center center;
+      }
+
+      @media (max-width: 768px) {
+        body.mode-fullscreen .dino-iframe {
+          transform: scale(1.2);
         }
-        50% {
-          transform: translateY(-6px);
-        }
+      }
+
+      /* Oculta scrollbars */
+      body::-webkit-scrollbar {
+        display: none;
+      }
+      body {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
       }
     </style>
   </head>
   <body
-    class="flex flex-col items-center justify-between p-4 md:p-8 text-white select-none"
+    id="body-root"
+    class="min-h-full w-full flex flex-col items-center justify-between p-4 md:p-8 text-white select-none transition-all duration-300"
   >
     <!-- Cabeçalho -->
-    <header class="text-center mt-2 mb-6">
-      <div
-        class="inline-flex items-center gap-2 bg-black/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-3 text-orange-100 border border-white/10"
-      >
-        <span>🦖 Clássico Arcade</span>
+    <header id="main-header" class="text-center mt-2 mb-6 z-20">
+      <div class="flex items-center justify-center gap-3 mb-3">
+        <div
+          class="inline-flex items-center gap-2 bg-black/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider text-orange-100 border border-white/10"
+        >
+          <span>🦖 Clássico Arcade</span>
+        </div>
+
+        <!-- Botão de Alternância de Modos -->
+        <button
+          onclick="toggleLayoutMode()"
+          class="inline-flex items-center gap-2 bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/20 text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+          title="Alternar entre visualização em Moldura ou Tela Cheia"
+        >
+          <span id="mode-icon">🖥️</span>
+          <span id="mode-text">Modo Tela Cheia</span>
+        </button>
       </div>
+
       <h1
         class="text-3xl md:text-5xl font-extrabold tracking-tight drop-shadow-md pixel-font text-white flex items-center justify-center gap-3"
       >
         JOGO DO DINO
       </h1>
-      <p class="text-orange-100/90 mt-2 text-sm md:text-base font-medium">
+      <p id="header-desc" class="text-orange-100/90 mt-2 text-sm md:text-base font-medium">
         Corra, salte dos cactos e supere sua pontuação mais alta!
       </p>
     </header>
 
     <!-- Container Principal do Jogo -->
-    <main
-      class="w-full max-w-4xl flex-1 flex flex-col items-center justify-center my-auto"
-    >
+    <main class="w-full max-w-4xl flex-1 flex flex-col items-center justify-center my-auto z-10">
       <div
-        class="w-full bg-black/20 backdrop-blur-xl border border-white/20 rounded-3xl p-3 md:p-6 shadow-2xl transition-all duration-300 hover:shadow-orange-950/40"
+        id="card-container"
+        class="w-full bg-black/20 backdrop-blur-xl border border-white/20 rounded-3xl p-3 md:p-6 shadow-2xl transition-all duration-300"
       >
         <!-- Moldura do Canvas do Jogo -->
         <div
-          class="relative w-full aspect-[16/9] sm:aspect-[21/9] bg-orange-950/40 rounded-2xl overflow-hidden border border-white/10 flex items-center justify-center"
+          id="game-wrapper"
+          class="game-wrapper relative w-full aspect-[16/9] sm:aspect-[21/9] bg-orange-950/40 rounded-2xl overflow-hidden border border-white/10 flex items-center justify-center"
         >
           <!-- Embed do Jogo -->
           <iframe
@@ -101,7 +129,8 @@
 
     <!-- Instruções de Controles -->
     <footer
-      class="w-full max-w-4xl mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs md:text-sm font-semibold text-orange-100/80 bg-black/15 backdrop-blur-md rounded-2xl p-4 border border-white/10"
+      id="main-footer"
+      class="w-full max-w-4xl mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs md:text-sm font-semibold text-orange-100/80 bg-black/15 backdrop-blur-md rounded-2xl p-4 border border-white/10 z-20"
     >
       <div class="flex items-center gap-3">
         <span
@@ -125,11 +154,47 @@
       </div>
 
       <div class="hidden md:flex items-center gap-1.5 text-white/90">
-        <span
-          class="inline-block w-2 h-2 rounded-full bg-green-400 bounce-gentle"
-        ></span>
+        <span class="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
         <span>Toque na tela para dispositivos móveis</span>
       </div>
     </footer>
+
+    <!-- Lógica de Alternância via JavaScript -->
+    <script>
+      let isFullscreenMode = false;
+
+      function toggleLayoutMode() {
+        isFullscreenMode = !isFullscreenMode;
+        const body = document.getElementById('body-root');
+        const header = document.getElementById('main-header');
+        const footer = document.getElementById('main-footer');
+        const headerDesc = document.getElementById('header-desc');
+        const modeText = document.getElementById('mode-text');
+        const modeIcon = document.getElementById('mode-icon');
+        const cardContainer = document.getElementById('card-container');
+
+        if (isFullscreenMode) {
+          body.classList.add('mode-fullscreen');
+          // Ajustes do layout para modo Tela Cheia Flutuante
+          header.className = "fixed top-4 left-4 right-4 z-30 flex items-center justify-between bg-black/30 backdrop-blur-md p-3 px-6 rounded-full border border-white/20 shadow-2xl";
+          headerDesc.classList.add('hidden');
+          footer.className = "fixed bottom-4 z-30 bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/20 shadow-2xl flex items-center justify-center gap-4 text-xs font-medium text-white/90";
+          cardContainer.className = "w-full h-full";
+          
+          modeText.innerText = "Modo Moldura";
+          modeIcon.innerText = "🔲";
+        } else {
+          body.classList.remove('mode-fullscreen');
+          // Restaura layout original em Moldura
+          header.className = "text-center mt-2 mb-6 z-20";
+          headerDesc.classList.remove('hidden');
+          footer.className = "w-full max-w-4xl mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs md:text-sm font-semibold text-orange-100/80 bg-black/15 backdrop-blur-md rounded-2xl p-4 border border-white/10 z-20";
+          cardContainer.className = "w-full bg-black/20 backdrop-blur-xl border border-white/20 rounded-3xl p-3 md:p-6 shadow-2xl transition-all duration-300";
+          
+          modeText.innerText = "Modo Tela Cheia";
+          modeIcon.innerText = "🖥️";
+        }
+      }
+    </script>
   </body>
 </html>
