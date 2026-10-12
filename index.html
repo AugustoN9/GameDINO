@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jogo do Dino - Duplo Modo</title>
+    <title>Arcade Hub - Dino & Snake</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -24,7 +24,7 @@
         font-family: "Press Start 2P", cursive;
       }
 
-      /* Filtro e estilo base do iframe */
+      /* Filtro e estilo base do iframe original do Dino */
       .dino-iframe {
         filter: invert(1) contrast(1.6) brightness(1.2)
           drop-shadow(0px 4px 10px rgba(0, 0, 0, 0.3));
@@ -34,7 +34,7 @@
         height: 100%;
       }
 
-      /* Estilos específicos do Modo Tela Cheia */
+      /* Estilos específicos do Modo Tela Cheia do Dino */
       body.mode-fullscreen .game-wrapper {
         position: fixed;
         inset: 0;
@@ -60,6 +60,20 @@
         }
       }
 
+      /* Estilo da tela do Canvas Snake */
+      canvas {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+
+      .game-card {
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      }
+      .game-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.4);
+      }
+
       /* Oculta scrollbars */
       body::-webkit-scrollbar {
         display: none;
@@ -72,50 +86,113 @@
   </head>
   <body
     id="body-root"
-    class="min-h-full w-full flex flex-col items-center justify-between p-4 md:p-8 text-white select-none transition-all duration-300"
+    class="min-h-full w-full flex flex-col items-center justify-between p-4 md:p-8 text-white select-none transition-all duration-300 relative"
   >
-    <!-- Cabeçalho -->
-    <header id="main-header" class="text-center mt-2 mb-6 z-20">
-      <div class="flex items-center justify-center gap-3 mb-3">
+    <!-- Cabeçalho Principal -->
+    <header id="main-header" class="text-center mt-2 mb-6 z-20 w-full max-w-4xl flex flex-col items-center">
+      <div class="flex items-center justify-between w-full mb-3">
         <div
           class="inline-flex items-center gap-2 bg-black/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider text-orange-100 border border-white/10"
         >
-          <span>🦖 Clássico Arcade</span>
+          <span id="header-badge">🕹️ Arcade Center</span>
         </div>
 
-        <!-- Botão de Alternância de Modos -->
-        <button
-          onclick="toggleLayoutMode()"
-          class="inline-flex items-center gap-2 bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/20 text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
-          title="Alternar entre visualização em Moldura ou Tela Cheia"
-        >
-          <span id="mode-icon">🖥️</span>
-          <span id="mode-text">Modo Tela Cheia</span>
-        </button>
+        <div class="flex items-center gap-2">
+          <!-- Botão Voltar ao Menu -->
+          <button
+            onclick="showMenu()"
+            id="back-menu-btn"
+            class="hidden bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/20 text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg flex items-center gap-1.5"
+          >
+            🏠 Menu
+          </button>
+
+          <!-- Botão de Alternância de Tela Cheia do Dino -->
+          <button
+            onclick="toggleLayoutMode()"
+            id="dino-fullscreen-btn"
+            class="hidden bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/20 text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg flex items-center gap-1.5"
+            title="Alternar entre visualização em Moldura ou Tela Cheia"
+          >
+            <span id="mode-icon">🖥️</span>
+            <span id="mode-text">Modo Tela Cheia</span>
+          </button>
+
+          <!-- Botão de Mute Audio -->
+          <button
+            onclick="toggleAudio()"
+            id="audio-btn"
+            class="bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/20 text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 shadow-lg flex items-center gap-1.5"
+          >
+            🔊 Som
+          </button>
+        </div>
       </div>
 
       <h1
+        id="app-title"
         class="text-3xl md:text-5xl font-extrabold tracking-tight drop-shadow-md pixel-font text-white flex items-center justify-center gap-3"
       >
-        JOGO DO DINO
+        ARCADE HUB
       </h1>
       <p id="header-desc" class="text-orange-100/90 mt-2 text-sm md:text-base font-medium">
-        Corra, salte dos cactos e supere sua pontuação mais alta!
+        Escolha um dos jogos clássicos abaixo para começar!
       </p>
     </header>
 
-    <!-- Container Principal do Jogo -->
-    <main class="w-full max-w-4xl flex-1 flex flex-col items-center justify-center my-auto z-10">
+    <!-- TELA 1: MENU PRINCIPAL DE JOGOS -->
+    <main id="hub-menu" class="w-full max-w-4xl flex-1 flex flex-col items-center justify-center my-auto z-10">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+        
+        <!-- CARD 1: DINO RUNNER -->
+        <div 
+          onclick="openGame('dino')"
+          class="game-card cursor-pointer bg-black/20 backdrop-blur-xl border border-white/20 hover:border-yellow-400/80 rounded-3xl p-6 flex flex-col items-center text-center group"
+        >
+          <div class="w-20 h-20 bg-orange-950/60 rounded-2xl border border-white/10 flex items-center justify-center text-4xl mb-4 group-hover:scale-110 transition-transform">
+            🦖
+          </div>
+          <h2 class="pixel-font text-lg md:text-xl text-yellow-400 mb-2">JOGO DO DINO</h2>
+          <p class="text-xs md:text-sm text-orange-100/80 mb-4 font-medium leading-relaxed">
+            Corra, salte dos cactos e supere sua pontuação mais alta no clássico Dino do Chrome com filtro de contraste!
+          </p>
+          <div class="mt-auto bg-yellow-500 group-hover:bg-yellow-400 text-black font-pixel text-xs px-5 py-2.5 rounded-xl font-bold shadow-md transition-all">
+            JOGAR DINO
+          </div>
+        </div>
+
+        <!-- CARD 2: SNAKE GAME -->
+        <div 
+          onclick="openGame('snake')"
+          class="game-card cursor-pointer bg-black/20 backdrop-blur-xl border border-white/20 hover:border-yellow-400/80 rounded-3xl p-6 flex flex-col items-center text-center group"
+        >
+          <div class="w-20 h-20 bg-orange-950/60 rounded-2xl border border-white/10 flex items-center justify-center text-4xl mb-4 group-hover:scale-110 transition-transform">
+            🐍
+          </div>
+          <h2 class="pixel-font text-lg md:text-xl text-yellow-400 mb-2">SNAKE GAME</h2>
+          <p class="text-xs md:text-sm text-orange-100/80 mb-4 font-medium leading-relaxed">
+            Guie a cobrinha, coma 10 maçãs para subir de nível e acelerar. Escolha entre várias skins retrô!
+          </p>
+          <div class="mt-auto bg-yellow-500 group-hover:bg-yellow-400 text-black font-pixel text-xs px-5 py-2.5 rounded-xl font-bold shadow-md transition-all">
+            JOGAR SNAKE
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- TELA 2: ÁREA DO JOGO ATIVO -->
+    <main id="game-view" class="hidden w-full max-w-4xl flex-1 flex flex-col items-center justify-center my-auto z-10">
+      
+      <!-- JOGO DO DINO (ORIGINAL INDEX1.HTML) -->
       <div
         id="card-container"
-        class="w-full bg-black/20 backdrop-blur-xl border border-white/20 rounded-3xl p-3 md:p-6 shadow-2xl transition-all duration-300"
+        class="hidden w-full bg-black/20 backdrop-blur-xl border border-white/20 rounded-3xl p-3 md:p-6 shadow-2xl transition-all duration-300"
       >
-        <!-- Moldura do Canvas do Jogo -->
         <div
           id="game-wrapper"
           class="game-wrapper relative w-full aspect-[16/9] sm:aspect-[21/9] bg-orange-950/40 rounded-2xl overflow-hidden border border-white/10 flex items-center justify-center"
         >
-          <!-- Embed do Jogo -->
           <iframe
             src="https://chromedino.com/embed/"
             class="dino-iframe"
@@ -125,44 +202,163 @@
           ></iframe>
         </div>
       </div>
+
+      <!-- JOGO DA COBRINHA (SNAKE CANVAS) -->
+      <div
+        id="snake-container"
+        class="hidden w-full bg-black/20 backdrop-blur-xl border border-white/20 rounded-3xl p-3 md:p-6 shadow-2xl transition-all duration-300 flex flex-col items-center justify-center"
+      >
+        <div class="relative w-full aspect-[4/3] max-h-[55vh] bg-orange-950/50 rounded-2xl overflow-hidden border border-white/10 flex items-center justify-center">
+          <canvas id="snakeCanvas" class="w-full h-full block"></canvas>
+
+          <!-- Menu Overlay Snake -->
+          <div id="snake-overlay" class="absolute inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-4 z-30">
+            <h2 id="snake-title" class="pixel-font text-lg md:text-2xl text-yellow-400 mb-2 text-center">SELEÇÃO DE SKIN</h2>
+            <p id="snake-subtitle" class="text-xs md:text-sm text-orange-100/90 mb-4 text-center">Coma 10 maçãs para avançar de nível e acelerar!</p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 max-w-lg w-full">
+              <button onclick="selectSnakeSkin('classic')" id="snake-btn-classic" class="snake-skin-btn bg-white/20 hover:bg-white/30 border-2 border-yellow-400 p-3 rounded-xl flex flex-col items-center gap-1">
+                <span class="text-2xl">🐍</span>
+                <span class="text-[10px] font-bold">Verde Mamba</span>
+              </button>
+              <button onclick="selectSnakeSkin('nyan')" id="snake-btn-nyan" class="snake-skin-btn bg-white/10 hover:bg-white/30 border border-white/20 p-3 rounded-xl flex flex-col items-center gap-1">
+                <span class="text-2xl">🌈</span>
+                <span class="text-[10px] font-bold">Nyan Snake</span>
+              </button>
+              <button onclick="selectSnakeSkin('sans')" id="snake-btn-sans" class="snake-skin-btn bg-white/10 hover:bg-white/30 border border-white/20 p-3 rounded-xl flex flex-col items-center gap-1">
+                <span class="text-2xl">💀</span>
+                <span class="text-[10px] font-bold">Caveira/Sans</span>
+              </button>
+              <button onclick="selectSnakeSkin('goku')" id="snake-btn-goku" class="snake-skin-btn bg-white/10 hover:bg-white/30 border border-white/20 p-3 rounded-xl flex flex-col items-center gap-1">
+                <span class="text-2xl">⚡</span>
+                <span class="text-[10px] font-bold">Saiyajin</span>
+              </button>
+            </div>
+
+            <div id="snake-score-summary" class="hidden flex flex-col items-center gap-1 mb-4 text-xs font-pixel bg-white/10 px-4 py-2.5 rounded-lg border border-white/20">
+              <span class="text-orange-200">Pontuação: <span id="snake-final-score" class="text-white">0</span></span>
+              <span class="text-yellow-300">Nível Alcançado: <span id="snake-final-level" class="text-white">1</span></span>
+            </div>
+
+            <button onclick="startSnakeGame()" class="bg-yellow-500 hover:bg-yellow-400 text-black font-pixel text-xs px-6 py-3 rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform">
+              INICIAR COBRINHA
+            </button>
+          </div>
+        </div>
+
+        <!-- Controles Virtuais Touch para Celular -->
+        <div id="snake-touch-controls" class="hidden flex flex-col items-center gap-1 mt-3 sm:hidden z-20">
+          <button onclick="changeSnakeDir('UP')" class="bg-white/20 active:bg-white/40 p-3 rounded-xl text-lg w-12 h-12 flex items-center justify-center border border-white/20">▲</button>
+          <div class="flex gap-4">
+            <button onclick="changeSnakeDir('LEFT')" class="bg-white/20 active:bg-white/40 p-3 rounded-xl text-lg w-12 h-12 flex items-center justify-center border border-white/20">◀</button>
+            <button onclick="changeSnakeDir('DOWN')" class="bg-white/20 active:bg-white/40 p-3 rounded-xl text-lg w-12 h-12 flex items-center justify-center border border-white/20">▼</button>
+            <button onclick="changeSnakeDir('RIGHT')" class="bg-white/20 active:bg-white/40 p-3 rounded-xl text-lg w-12 h-12 flex items-center justify-center border border-white/20">▶</button>
+          </div>
+        </div>
+      </div>
+
     </main>
 
-    <!-- Instruções de Controles -->
+    <!-- Instruções e Rodapé -->
     <footer
       id="main-footer"
       class="w-full max-w-4xl mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs md:text-sm font-semibold text-orange-100/80 bg-black/15 backdrop-blur-md rounded-2xl p-4 border border-white/10 z-20"
     >
-      <div class="flex items-center gap-3">
-        <span
-          class="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 shadow-sm font-mono"
-          >ESPAÇO</span
-        >
+      <div id="footer-controls-1" class="flex items-center gap-3">
+        <span class="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 shadow-sm font-mono">ESPAÇO</span>
         <span>ou</span>
-        <span
-          class="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 shadow-sm font-mono"
-          >SETA CIMA</span
-        >
+        <span class="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 shadow-sm font-mono">SETA CIMA</span>
         <span>= Pular</span>
       </div>
 
-      <div class="flex items-center gap-3">
-        <span
-          class="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 shadow-sm font-mono"
-          >SETA BAIXO</span
-        >
+      <div id="footer-controls-2" class="flex items-center gap-3">
+        <span class="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 shadow-sm font-mono">SETA BAIXO</span>
         <span>= Agachar</span>
       </div>
 
-      <div class="hidden md:flex items-center gap-1.5 text-white/90">
+      <div id="footer-controls-3" class="hidden md:flex items-center gap-1.5 text-white/90">
         <span class="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
         <span>Toque na tela para dispositivos móveis</span>
       </div>
     </footer>
 
-    <!-- Lógica de Alternância via JavaScript -->
+    <!-- LÓGICA DE GERENCIAMENTO E NAVEGAÇÃO -->
     <script>
+      let currentGame = null; // 'dino' | 'snake' | null
       let isFullscreenMode = false;
 
+      // NAVEGAÇÃO DO HUB
+      function showMenu() {
+        if (isFullscreenMode) {
+          toggleLayoutMode(); // Sai do modo tela cheia se ativo
+        }
+        if (snakeInterval) clearInterval(snakeInterval);
+        currentGame = null;
+
+        document.getElementById('hub-menu').classList.remove('hidden');
+        document.getElementById('game-view').classList.add('hidden');
+        document.getElementById('back-menu-btn').classList.add('hidden');
+        document.getElementById('dino-fullscreen-btn').classList.add('hidden');
+
+        document.getElementById('header-badge').innerText = "🕹️ Arcade Center";
+        document.getElementById('app-title').innerText = "ARCADE HUB";
+        document.getElementById('header-desc').innerText = "Escolha um dos jogos clássicos abaixo para começar!";
+
+        // Restaura rodapé informativo
+        document.getElementById('footer-controls-1').innerHTML = `<span>🎮 Selecione o jogo para iniciar</span>`;
+        document.getElementById('footer-controls-2').style.display = 'none';
+        document.getElementById('footer-controls-3').style.display = 'none';
+      }
+
+      function openGame(gameKey) {
+        currentGame = gameKey;
+        document.getElementById('hub-menu').classList.add('hidden');
+        document.getElementById('game-view').classList.remove('hidden');
+        document.getElementById('back-menu-btn').classList.remove('hidden');
+
+        if (gameKey === 'dino') {
+          document.getElementById('card-container').classList.remove('hidden');
+          document.getElementById('snake-container').classList.add('hidden');
+          document.getElementById('dino-fullscreen-btn').classList.remove('hidden');
+
+          document.getElementById('header-badge').innerText = "🦖 Clássico Arcade";
+          document.getElementById('app-title').innerText = "JOGO DO DINO";
+          document.getElementById('header-desc').innerText = "Corra, salte dos cactos e supere sua pontuação mais alta!";
+
+          // Rodapé do Dino
+          document.getElementById('footer-controls-1').innerHTML = `
+            <span class="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 shadow-sm font-mono">ESPAÇO</span>
+            <span>ou</span>
+            <span class="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 shadow-sm font-mono">SETA CIMA</span>
+            <span>= Pular</span>`;
+          document.getElementById('footer-controls-2').style.display = 'flex';
+          document.getElementById('footer-controls-2').innerHTML = `
+            <span class="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 shadow-sm font-mono">SETA BAIXO</span>
+            <span>= Agachar</span>`;
+          document.getElementById('footer-controls-3').style.display = 'flex';
+        } else if (gameKey === 'snake') {
+          document.getElementById('snake-container').classList.remove('hidden');
+          document.getElementById('card-container').classList.add('hidden');
+          document.getElementById('dino-fullscreen-btn').classList.add('hidden');
+
+          document.getElementById('header-badge').innerText = "🐍 Snake Runner HD";
+          document.getElementById('app-title').innerText = "SNAKE GAME";
+          document.getElementById('header-desc').innerText = "Coma 10 maçãs para avançar de nível e acelerar!";
+
+          // Rodapé do Snake
+          document.getElementById('footer-controls-1').innerHTML = `
+            <span class="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 shadow-sm font-mono">SETAS</span>
+            <span>ou</span>
+            <span class="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 shadow-sm font-mono">W A S D</span>
+            <span>= Controlar Direção</span>`;
+          document.getElementById('footer-controls-2').style.display = 'none';
+          document.getElementById('footer-controls-3').style.display = 'none';
+
+          initSnakeCanvas();
+        }
+      }
+
+      // LÓGICA DE TELA CHEIA DO JOGO DO DINO (ORIGINAL DO INDEX1.HTML)
       function toggleLayoutMode() {
         isFullscreenMode = !isFullscreenMode;
         const body = document.getElementById('body-root');
@@ -175,7 +371,6 @@
 
         if (isFullscreenMode) {
           body.classList.add('mode-fullscreen');
-          // Ajustes do layout para modo Tela Cheia Flutuante
           header.className = "fixed top-4 left-4 right-4 z-30 flex items-center justify-between bg-black/30 backdrop-blur-md p-3 px-6 rounded-full border border-white/20 shadow-2xl";
           headerDesc.classList.add('hidden');
           footer.className = "fixed bottom-4 z-30 bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/20 shadow-2xl flex items-center justify-center gap-4 text-xs font-medium text-white/90";
@@ -185,8 +380,7 @@
           modeIcon.innerText = "🔲";
         } else {
           body.classList.remove('mode-fullscreen');
-          // Restaura layout original em Moldura
-          header.className = "text-center mt-2 mb-6 z-20";
+          header.className = "text-center mt-2 mb-6 z-20 w-full max-w-4xl flex flex-col items-center";
           headerDesc.classList.remove('hidden');
           footer.className = "w-full max-w-4xl mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs md:text-sm font-semibold text-orange-100/80 bg-black/15 backdrop-blur-md rounded-2xl p-4 border border-white/10 z-20";
           cardContainer.className = "w-full bg-black/20 backdrop-blur-xl border border-white/20 rounded-3xl p-3 md:p-6 shadow-2xl transition-all duration-300";
@@ -195,6 +389,254 @@
           modeIcon.innerText = "🖥️";
         }
       }
+
+      /* ========================================================
+         ENGINE DO JOGO DA COBRINHA (SNAKE)
+         ======================================================== */
+      const snakeCanvas = document.getElementById('snakeCanvas');
+      const snakeCtx = snakeCanvas.getContext('2d');
+      const SNAKE_GRID = 20;
+      const SNAKE_CANVAS_SIZE = 400;
+      snakeCanvas.width = SNAKE_CANVAS_SIZE;
+      snakeCanvas.height = SNAKE_CANVAS_SIZE;
+      snakeCtx.imageSmoothingEnabled = false;
+
+      let audioMuted = false;
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      function playSound(type) {
+        if (audioMuted) return;
+        try {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          if (type === 'eat') {
+            osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+          } else if (type === 'levelUp') {
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+          } else if (type === 'hit') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+          }
+        } catch (e) {}
+      }
+
+      function toggleAudio() {
+        audioMuted = !audioMuted;
+        document.getElementById('audio-btn').innerText = audioMuted ? '🔇 Mudo' : '🔊 Som';
+      }
+
+      let isSnakePlaying = false;
+      let snakeScore = 0;
+      let snakeLevel = 1;
+      let snakeHighScore = localStorage.getItem('snake_highscore') || 0;
+      let selectedSnakeSkin = 'classic';
+      let snakeInterval;
+      
+      const INITIAL_SNAKE_SPEED = 180;
+      const SNAKE_SPEED_INCREMENT = 15;
+      const MIN_SNAKE_SPEED = 45;
+      let currentSnakeSpeed = INITIAL_SNAKE_SPEED;
+
+      let snakeBody = [];
+      let snakeDirection = 'RIGHT';
+      let snakeNextDirection = 'RIGHT';
+      let snakeFood = { x: 0, y: 0 };
+
+      const SNAKE_SKINS = {
+        classic: { head: '#00FF66', body: '#00CC55' },
+        nyan: { head: '#FFDD00', rainbow: ['#FF0000', '#FF7700', '#FFFF00', '#00FF00', '#0099FF', '#8800FF'] },
+        sans: { head: '#FFFFFF', body: '#0066FF' },
+        goku: { head: '#FFD700', body: '#FF5500' }
+      };
+
+      function initSnakeCanvas() {
+        snakeCtx.fillStyle = '#FFFFFF';
+        snakeCtx.font = '10px "Press Start 2P"';
+        snakeCtx.fillText("ESCOLHA A SKIN E CLIQUE EM INICIAR", 40, 200);
+      }
+
+      function selectSnakeSkin(skinKey) {
+        selectedSnakeSkin = skinKey;
+        document.querySelectorAll('.snake-skin-btn').forEach(btn => {
+          btn.classList.remove('border-yellow-400', 'bg-white/20');
+          btn.classList.add('border-white/20', 'bg-white/10');
+        });
+        const activeBtn = document.getElementById(`snake-btn-${skinKey}`);
+        if (activeBtn) activeBtn.classList.add('border-yellow-400', 'bg-white/20');
+      }
+
+      function startSnakeGame() {
+        document.getElementById('snake-overlay').classList.add('hidden');
+        snakeBody = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+        snakeDirection = 'RIGHT';
+        snakeNextDirection = 'RIGHT';
+        snakeScore = 0;
+        snakeLevel = 1;
+        currentSnakeSpeed = INITIAL_SNAKE_SPEED;
+        isSnakePlaying = true;
+        spawnSnakeFood();
+
+        if (snakeInterval) clearInterval(snakeInterval);
+        snakeInterval = setInterval(snakeGameLoop, currentSnakeSpeed);
+      }
+
+      function spawnSnakeFood() {
+        snakeFood = {
+          x: Math.floor(Math.random() * (SNAKE_CANVAS_SIZE / SNAKE_GRID)),
+          y: Math.floor(Math.random() * (SNAKE_CANVAS_SIZE / SNAKE_GRID))
+        };
+        for (let seg of snakeBody) {
+          if (seg.x === snakeFood.x && seg.y === snakeFood.y) {
+            spawnSnakeFood();
+            break;
+          }
+        }
+      }
+
+      function changeSnakeDir(newDir) {
+        if (!isSnakePlaying) return;
+        if (newDir === 'LEFT' && snakeDirection !== 'RIGHT') snakeNextDirection = 'LEFT';
+        if (newDir === 'UP' && snakeDirection !== 'DOWN') snakeNextDirection = 'UP';
+        if (newDir === 'RIGHT' && snakeDirection !== 'LEFT') snakeNextDirection = 'RIGHT';
+        if (newDir === 'DOWN' && snakeDirection !== 'UP') snakeNextDirection = 'DOWN';
+      }
+
+      function snakeGameLoop() {
+        snakeDirection = snakeNextDirection;
+        const head = { ...snakeBody[0] };
+
+        if (snakeDirection === 'LEFT') head.x -= 1;
+        if (snakeDirection === 'UP') head.y -= 1;
+        if (snakeDirection === 'RIGHT') head.x += 1;
+        if (snakeDirection === 'DOWN') head.y += 1;
+
+        const maxGrid = SNAKE_CANVAS_SIZE / SNAKE_GRID;
+        if (head.x < 0 || head.x >= maxGrid || head.y < 0 || head.y >= maxGrid) {
+          snakeGameOver();
+          return;
+        }
+
+        for (let i = 0; i < snakeBody.length; i++) {
+          if (snakeBody[i].x === head.x && snakeBody[i].y === head.y) {
+            snakeGameOver();
+            return;
+          }
+        }
+
+        snakeBody.unshift(head);
+
+        if (head.x === snakeFood.x && head.y === snakeFood.y) {
+          snakeScore += 1;
+          const newLevel = Math.floor(snakeScore / 10) + 1;
+          
+          if (newLevel > snakeLevel) {
+            snakeLevel = newLevel;
+            playSound('levelUp');
+            currentSnakeSpeed = Math.max(MIN_SNAKE_SPEED, INITIAL_SNAKE_SPEED - (snakeLevel - 1) * SNAKE_SPEED_INCREMENT);
+            clearInterval(snakeInterval);
+            snakeInterval = setInterval(snakeGameLoop, currentSnakeSpeed);
+          } else {
+            playSound('eat');
+          }
+
+          spawnSnakeFood();
+        } else {
+          snakeBody.pop();
+        }
+
+        renderSnake();
+      }
+
+      function renderSnake() {
+        snakeCtx.clearRect(0, 0, SNAKE_CANVAS_SIZE, SNAKE_CANVAS_SIZE);
+
+        snakeCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        for (let i = 0; i < SNAKE_CANVAS_SIZE; i += SNAKE_GRID) {
+          snakeCtx.beginPath();
+          snakeCtx.moveTo(i, 0); snakeCtx.lineTo(i, SNAKE_CANVAS_SIZE);
+          snakeCtx.moveTo(0, i); snakeCtx.lineTo(SNAKE_CANVAS_SIZE, i);
+          snakeCtx.stroke();
+        }
+
+        snakeCtx.fillStyle = '#FFFFFF';
+        snakeCtx.fillRect(snakeFood.x * SNAKE_GRID + 3, snakeFood.y * SNAKE_GRID + 3, SNAKE_GRID - 6, SNAKE_GRID - 6);
+
+        const skin = SNAKE_SKINS[selectedSnakeSkin] || SNAKE_SKINS.classic;
+        snakeBody.forEach((segment, index) => {
+          const x = segment.x * SNAKE_GRID;
+          const y = segment.y * SNAKE_GRID;
+
+          if (index === 0) {
+            snakeCtx.fillStyle = skin.head;
+            snakeCtx.fillRect(x + 1, y + 1, SNAKE_GRID - 2, SNAKE_GRID - 2);
+            snakeCtx.fillStyle = '#000000';
+            snakeCtx.fillRect(x + 4, y + 4, 3, 3);
+            snakeCtx.fillRect(x + 12, y + 4, 3, 3);
+          } else {
+            if (selectedSnakeSkin === 'nyan') {
+              const rainbow = skin.rainbow;
+              snakeCtx.fillStyle = rainbow[index % rainbow.length];
+            } else {
+              snakeCtx.fillStyle = skin.body;
+            }
+            snakeCtx.fillRect(x + 2, y + 2, SNAKE_GRID - 4, SNAKE_GRID - 4);
+          }
+        });
+
+        snakeCtx.fillStyle = '#FFFFFF';
+        snakeCtx.font = '9px "Press Start 2P"';
+        snakeCtx.fillText(`LVL ${snakeLevel}`, 15, 20);
+        snakeCtx.fillText(`HI ${String(snakeHighScore).padStart(4, '0')} ${String(snakeScore).padStart(4, '0')}`, SNAKE_CANVAS_SIZE - 150, 20);
+      }
+
+      function snakeGameOver() {
+        isSnakePlaying = false;
+        clearInterval(snakeInterval);
+        playSound('hit');
+
+        if (snakeScore > snakeHighScore) {
+          snakeHighScore = snakeScore;
+          localStorage.setItem('snake_highscore', snakeHighScore);
+        }
+
+        document.getElementById('snake-title').innerText = "FIM DE JOGO!";
+        document.getElementById('snake-subtitle').innerText = "Sua cobrinha bateu! Tente novamente:";
+        document.getElementById('snake-final-score').innerText = snakeScore;
+        document.getElementById('snake-final-level').innerText = snakeLevel;
+        document.getElementById('snake-score-summary').classList.remove('hidden');
+        document.getElementById('snake-overlay').classList.remove('hidden');
+      }
+
+      // CONTROLES DE TECLADO SNAKE
+      window.addEventListener('keydown', (e) => {
+        if (currentGame === 'snake') {
+          if (e.code === 'ArrowLeft' || e.code === 'KeyA') changeSnakeDir('LEFT');
+          if (e.code === 'ArrowUp' || e.code === 'KeyW') changeSnakeDir('UP');
+          if (e.code === 'ArrowRight' || e.code === 'KeyD') changeSnakeDir('RIGHT');
+          if (e.code === 'ArrowDown' || e.code === 'KeyS') changeSnakeDir('DOWN');
+          if (e.code === 'Space' && !isSnakePlaying && !document.getElementById('snake-overlay').classList.contains('hidden')) {
+            startSnakeGame();
+          }
+        }
+      });
+
+      // Inicialização do menu
+      showMenu();
     </script>
   </body>
 </html>
